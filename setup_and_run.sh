@@ -26,10 +26,10 @@ echo "✓ 虚拟环境已激活"
 echo
 
 # 检查是否需要安装依赖
-if ! python -c "import huggingface_hub" 2>/dev/null; then
+if ! "$VENV_DIR/bin/python" -c "import huggingface_hub" 2>/dev/null; then
     echo "正在安装依赖包..."
-    pip install --upgrade pip
-    pip install huggingface_hub
+    "$VENV_DIR/bin/pip" install --upgrade pip
+    "$VENV_DIR/bin/pip" install huggingface_hub
     echo "✓ 依赖包安装完成"
     echo
 else
@@ -41,7 +41,7 @@ fi
 echo "开始运行上传脚本..."
 echo "=================================="
 echo
-python run.py
+"$VENV_DIR/bin/python" run.py
 
 # 脚本结束
 echo
