@@ -17,7 +17,7 @@ from config import (
 )
 
 # 直接设置 HF Token
-HF_TOKEN = "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"
+HF_TOKEN = "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"
 
 # 尝试从 secrets.py 导入 token (如果存在)
 try:
