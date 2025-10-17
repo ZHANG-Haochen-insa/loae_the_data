@@ -16,13 +16,16 @@ from config import (
     HF_TOKEN
 )
 
+# 直接设置 HF Token
+HF_TOKEN = "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"
+
 # 尝试从 secrets.py 导入 token (如果存在)
 try:
     from secrets import HF_TOKEN as SECRET_TOKEN
     if SECRET_TOKEN and SECRET_TOKEN != "hf_YOUR_TOKEN_HERE":
         HF_TOKEN = SECRET_TOKEN
 except ImportError:
-    pass  # secrets.py 不存在，使用 config.py 中的配置
+    pass  # secrets.py 不存在，使用上面设置的 token
 
 # 导入主程序
 from batch_upload import BatchUploader

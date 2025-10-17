@@ -55,9 +55,24 @@ class BatchUploader:
         """获取压缩包中的所有顶层文件夹"""
         members = []
 
+        # 验证文件存在
+        if not os.path.exists(self.archive_path):
+            raise FileNotFoundError(f"压缩包不存在: {self.archive_path}")
+
+        # 验证文件可读
+        if not os.access(self.archive_path, os.R_OK):
+            raise PermissionError(f"无权限读取文件: {self.archive_path}")
+
         if self.archive_path.endswith('.zip'):
-            with zipfile.ZipFile(self.archive_path, 'r') as zf:
-                all_names = zf.namelist()
+            try:
+                # 使用 is_zipfile 检查
+                if not zipfile.is_zipfile(self.archive_path):
+                    raise ValueError(f"文件不是有效的 ZIP 格式: {self.archive_path}")
+
+                with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
+                    all_names = zf.namelist()
+            except zipfile.BadZipFile as e:
+                raise ValueError(f"ZIP 文件损坏: {str(e)}")
         elif self.archive_path.endswith(('.tar.gz', '.tgz', '.tar')):
             with tarfile.open(self.archive_path, 'r:*') as tf:
                 all_names = tf.getnames()
@@ -94,7 +109,7 @@ class BatchUploader:
         extract_path = Path(self.temp_dir) / folder_name
 
         if self.archive_path.endswith('.zip'):
-            with zipfile.ZipFile(self.archive_path, 'r') as zf:
+            with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
                 # 提取所有以该文件夹名开头的文件
                 members = [m for m in zf.namelist() if m.startswith(folder_name + '/') or m == folder_name]
                 zf.extractall(self.temp_dir, members=members)
