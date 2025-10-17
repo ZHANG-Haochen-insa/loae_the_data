@@ -5,11 +5,11 @@
 # ==================== 必填配置 ====================
 
 # 压缩包的完整路径
-ARCHIVE_PATH = "/path/to/your/archive.zip"
+ARCHIVE_PATH = "/home/hzhang02/TDSI-2025/b04/Totalsegmentator_dataset_v201.zip"
 
 # Hugging Face 仓库 ID (格式: username/repo-name)
 # 例如: "zhangsan/my-dataset"
-REPO_ID = "your-username/your-repo-name"
+REPO_ID = "ChenGe1/Totalsegmentator_dataset_v201"
 
 
 # ==================== 可选配置 ====================
@@ -25,4 +25,4 @@ REPO_TYPE = "dataset"
 
 # Hugging Face Token (如果已通过 huggingface-cli login 登录则无需填写)
 # 获取token: https://huggingface.co/settings/tokens
-HF_TOKEN = None
+HF_TOKEN = "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"
