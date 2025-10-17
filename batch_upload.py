@@ -64,44 +64,55 @@ class BatchUploader:
             raise PermissionError(f"无权限读取文件: {self.archive_path}")
 
         if self.archive_path.endswith('.zip'):
-            try:
-                print(f"正在验证 ZIP 文件: {self.archive_path}")
-                print(f"文件大小: {os.path.getsize(self.archive_path) / (1024**3):.2f} GB")
+            import subprocess
+            print(f"正在验证 ZIP 文件: {self.archive_path}")
+            print(f"文件大小: {os.path.getsize(self.archive_path) / (1024**3):.2f} GB")
 
-                # 尝试使用命令行 unzip -l (更宽容)
-                print("正在读取 ZIP 文件列表 (使用 unzip 命令)...")
-                import subprocess
+            # 优先使用命令行 unzip (最宽容)
+            print("正在读取 ZIP 文件列表 (使用 unzip 命令)...")
+            try:
                 result = subprocess.run(
                     ['unzip', '-l', self.archive_path],
                     capture_output=True,
                     text=True,
-                    timeout=60
+                    timeout=120
                 )
 
-                if result.returncode == 0:
-                    # 从 unzip -l 输出解析文件名
-                    all_names = []
-                    for line in result.stdout.split('\n'):
-                        # unzip -l 格式: Length  Date    Time    Name
-                        parts = line.strip().split()
-                        if len(parts) >= 4 and parts[0].isdigit():
-                            # 文件名是最后一个字段
-                            filename = ' '.join(parts[3:])
+                # 从 unzip -l 输出解析文件名
+                all_names = []
+                for line in result.stdout.split('\n'):
+                    # unzip -l 格式: Length  Date    Time    Name
+                    parts = line.strip().split()
+                    if len(parts) >= 4 and parts[0].isdigit():
+                        # 文件名是最后一个字段(可能包含空格)
+                        filename = ' '.join(parts[3:])
+                        if filename:
                             all_names.append(filename)
-                    print(f"成功读取,共 {len(all_names)} 个文件/文件夹")
-                else:
-                    # 如果 unzip 失败,尝试 Python zipfile
-                    print("unzip 命令失败,尝试 Python zipfile...")
-                    with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
-                        all_names = zf.namelist()
-                        print(f"成功读取,共 {len(all_names)} 个文件/文件夹")
 
-            except subprocess.TimeoutExpired:
-                raise ValueError("读取 ZIP 文件列表超时")
-            except zipfile.BadZipFile as e:
-                raise ValueError(f"ZIP 文件损坏: {str(e)}")
+                if len(all_names) > 0:
+                    print(f"✓ 使用 unzip 成功读取,共 {len(all_names)} 个文件/文件夹")
+                else:
+                    raise ValueError("unzip 未能读取到文件列表")
+
             except Exception as e:
-                raise ValueError(f"无法打开 ZIP 文件: {str(e)}")
+                print(f"unzip 失败: {str(e)}")
+                print("尝试使用 zipinfo...")
+                # 尝试 zipinfo
+                try:
+                    result = subprocess.run(
+                        ['zipinfo', '-1', self.archive_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=120
+                    )
+                    all_names = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+                    if len(all_names) > 0:
+                        print(f"✓ 使用 zipinfo 成功读取,共 {len(all_names)} 个文件/文件夹")
+                    else:
+                        raise ValueError("zipinfo 未能读取到文件列表")
+                except Exception as e2:
+                    print(f"zipinfo 也失败: {str(e2)}")
+                    raise ValueError(f"无法读取 ZIP 文件列表。unzip: {str(e)}, zipinfo: {str(e2)}")
         elif self.archive_path.endswith(('.tar.gz', '.tgz', '.tar')):
             with tarfile.open(self.archive_path, 'r:*') as tf:
                 all_names = tf.getnames()
