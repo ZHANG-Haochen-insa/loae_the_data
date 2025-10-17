@@ -65,14 +65,18 @@ class BatchUploader:
 
         if self.archive_path.endswith('.zip'):
             try:
-                # 使用 is_zipfile 检查
-                if not zipfile.is_zipfile(self.archive_path):
-                    raise ValueError(f"文件不是有效的 ZIP 格式: {self.archive_path}")
+                print(f"正在验证 ZIP 文件: {self.archive_path}")
+                print(f"文件大小: {os.path.getsize(self.archive_path) / (1024**3):.2f} GB")
 
+                # 尝试直接打开,不进行预检查
+                print("正在读取 ZIP 文件列表...")
                 with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
                     all_names = zf.namelist()
+                    print(f"成功读取,共 {len(all_names)} 个文件/文件夹")
             except zipfile.BadZipFile as e:
                 raise ValueError(f"ZIP 文件损坏: {str(e)}")
+            except Exception as e:
+                raise ValueError(f"无法打开 ZIP 文件: {str(e)}")
         elif self.archive_path.endswith(('.tar.gz', '.tgz', '.tar')):
             with tarfile.open(self.archive_path, 'r:*') as tf:
                 all_names = tf.getnames()
