@@ -25,4 +25,5 @@ REPO_TYPE = "dataset"
 
 # Hugging Face Token (如果已通过 huggingface-cli login 登录则无需填写)
 # 获取token: https://huggingface.co/settings/tokens
-HF_TOKEN = "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"
+# 建议使用 secrets.py 文件存放 token，避免泄露
+HF_TOKEN = None  # 或从 secrets.py 导入: from secrets import HF_TOKEN

@@ -1,0 +1,20 @@
+# 敏感信息文件
+secrets.py
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 虚拟环境
+venv/
+env/
+ENV/
+
+# 进度文件
+upload_progress.txt
+
+# 临时文件
+*.log
+.DS_Store
