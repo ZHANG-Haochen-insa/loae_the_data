@@ -68,11 +68,36 @@ class BatchUploader:
                 print(f"正在验证 ZIP 文件: {self.archive_path}")
                 print(f"文件大小: {os.path.getsize(self.archive_path) / (1024**3):.2f} GB")
 
-                # 尝试直接打开,不进行预检查
-                print("正在读取 ZIP 文件列表...")
-                with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
-                    all_names = zf.namelist()
+                # 尝试使用命令行 unzip -l (更宽容)
+                print("正在读取 ZIP 文件列表 (使用 unzip 命令)...")
+                import subprocess
+                result = subprocess.run(
+                    ['unzip', '-l', self.archive_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+
+                if result.returncode == 0:
+                    # 从 unzip -l 输出解析文件名
+                    all_names = []
+                    for line in result.stdout.split('\n'):
+                        # unzip -l 格式: Length  Date    Time    Name
+                        parts = line.strip().split()
+                        if len(parts) >= 4 and parts[0].isdigit():
+                            # 文件名是最后一个字段
+                            filename = ' '.join(parts[3:])
+                            all_names.append(filename)
                     print(f"成功读取,共 {len(all_names)} 个文件/文件夹")
+                else:
+                    # 如果 unzip 失败,尝试 Python zipfile
+                    print("unzip 命令失败,尝试 Python zipfile...")
+                    with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
+                        all_names = zf.namelist()
+                        print(f"成功读取,共 {len(all_names)} 个文件/文件夹")
+
+            except subprocess.TimeoutExpired:
+                raise ValueError("读取 ZIP 文件列表超时")
             except zipfile.BadZipFile as e:
                 raise ValueError(f"ZIP 文件损坏: {str(e)}")
             except Exception as e:
@@ -113,10 +138,20 @@ class BatchUploader:
         extract_path = Path(self.temp_dir) / folder_name
 
         if self.archive_path.endswith('.zip'):
-            with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
-                # 提取所有以该文件夹名开头的文件
-                members = [m for m in zf.namelist() if m.startswith(folder_name + '/') or m == folder_name]
-                zf.extractall(self.temp_dir, members=members)
+            # 尝试使用命令行 unzip,更宽容
+            import subprocess
+            try:
+                print(f"  使用 unzip 命令解压 {folder_name}...")
+                cmd = ['unzip', '-q', '-o', self.archive_path, f"{folder_name}/*", '-d', self.temp_dir]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if result.returncode != 0 and result.returncode != 1:  # 1 表示部分文件跳过,也算成功
+                    print(f"  unzip 警告: {result.stderr}")
+            except Exception as e:
+                print(f"  unzip 失败,尝试 Python zipfile: {str(e)}")
+                # 回退到 Python zipfile
+                with zipfile.ZipFile(self.archive_path, 'r', allowZip64=True) as zf:
+                    members = [m for m in zf.namelist() if m.startswith(folder_name + '/') or m == folder_name]
+                    zf.extractall(self.temp_dir, members=members)
         else:
             with tarfile.open(self.archive_path, 'r:*') as tf:
                 members = [m for m in tf.getmembers() if m.name.startswith(folder_name + '/') or m.name == folder_name]
