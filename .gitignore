@@ -1,6 +1,3 @@
-# 敏感信息文件
-secrets.py
-
 # Python 缓存
 __pycache__/
 *.py[cod]
